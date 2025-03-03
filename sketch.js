@@ -105,7 +105,7 @@ function setup() {
   });
 
   let earButton = createButton("Ears");
-  earButton.position(450, 230);
+  earButton.position(450, 290);
   earButton.mousePressed(() => randomizeFeature("ear"));
 
 }
