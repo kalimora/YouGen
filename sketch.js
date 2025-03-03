@@ -32,7 +32,13 @@ let face = {
     thickness: 2 // Thickness of eyebrows
   },
   ears: {},
-  hair: {},
+  hair: {
+    hairType: "straight", // Default type
+    hairColor: [50, 30, 20], // Default hair color (brown)
+    hairLength: 50, // Default length
+    hairVolume: 40, // Default volume
+    hairParting: "center" // Default parting
+  },
   skin: {
     skinColor: [255, 204, 153] // Default skin color
   },
@@ -41,7 +47,12 @@ let face = {
     faceHeight: 140,
     chinAngle: 0
   },
-  makeup: {},
+  makeup: {
+    enabled: false, // Toggle for makeup
+    eyeshadowColor: [0, 0, 0], // Default (will be randomized)
+    blushColor: [0, 0, 0], 
+    lipstickColor: [0, 0, 0]
+  },
   piercings: {}
 };
 
@@ -75,6 +86,17 @@ function setup() {
   skinButton.position(450, 200);
   skinButton.mousePressed(() => randomizeFeature("skin"));
 
+  let hairButton = createButton("Hair");
+  hairButton.position(450, 230);
+  hairButton.mousePressed(() => randomizeFeature("hair"));
+
+  let makeupButton = createButton("Toggle Makeup");
+  makeupButton.position(450, 260);
+  makeupButton.mousePressed(() => {
+    face.makeup.enabled = !face.makeup.enabled; // Toggle makeup on/off
+    redraw(); // Redraw the face
+  });
+
 }
 
 // ------------------- DRAWING ------------------------------------
@@ -86,7 +108,11 @@ function draw() {
 
 // Draw face with all features
 function drawFace() {
+  drawHair();
   drawFaceShape();
+  if (face.makeup.enabled) {
+    drawMakeup();
+  }                        // Only show makeup if enabled
   drawLips();
   drawNose();
   drawEyes();
@@ -292,6 +318,195 @@ function drawFaceShape() {
   pop();
 }
 
+// DRAW HAIR
+function drawHair() {
+  let xCenter = width / 2;
+  let yCenter = height / 2 - face.faceShape.faceHeight / 2 - 20;        // Place hair on top of the head
+
+  // Make sure hair has a color, otherwise use default brown
+  if (!face.hair.hairColor || face.hair.hairColor.length < 3) {
+    face.hair.hairColor = [50, 30, 20];
+  }
+
+  fill(face.hair.hairColor[0], face.hair.hairColor[1], face.hair.hairColor[2]);
+  noStroke();
+
+  let hairLength = face.hair.hairLength * 1.5;                          // Adjust length
+  let hairVolume = face.hair.hairVolume * 1.2;                          // Adjust width
+  let hairDensity = face.hair.hairDensity;                              // How thick the hair is
+
+  // The closer the spacing, the denser the hair
+  let strandSpacing = map(hairDensity, 0.5, 2, 15, 5); 
+  let curlSpacing = map(hairDensity, 0.5, 2, 20, 10);
+  let afroSpacing = map(hairDensity, 0.5, 2, 20, 8);
+  let spikeSpacing = map(hairDensity, 0.5, 2, 15, 7);
+
+  let spikeHeights = face.hair.spikeHeights || [];
+  let afroOffsets = face.hair.afroOffsets || [];
+
+  // STRAIGHT HAIR
+  if (face.hair.hairType === "straight") {
+    for (let i = -hairVolume / 2; i < hairVolume / 2; i += strandSpacing) {
+      let hairX = xCenter + i;
+      let hairY = yCenter + abs(i / 2) - 10;                            // Slight curve to follow head
+
+      stroke(face.hair.hairColor);
+      strokeWeight(map(hairDensity, 0.5, 2, 2, 5));                     // Thicker for dense hair
+
+      // Curved strands for a more natural look
+      bezier(hairX, hairY, hairX - 10, hairY + hairLength / 3, hairX + 10, hairY + (2 * hairLength) / 3, hairX, hairY + hairLength);
+    }
+  }
+
+  // WAVY HAIR
+  else if (face.hair.hairType === "wavy") {
+    for (let i = -hairVolume / 2; i < hairVolume / 2; i += strandSpacing) {
+      let hairX = xCenter + i;
+      let hairY = yCenter + abs(i / 3) - 10;
+
+      // Create loose waves
+      for (let j = 0; j < hairLength; j += 15) {
+        bezier(
+          hairX, hairY + j,
+          hairX + 8, hairY + j + 10,
+          hairX - 8, hairY + j + 20,
+          hairX, hairY + j + 30
+        );
+      }
+    }
+  }
+
+  // CURLY HAIR
+  else if (face.hair.hairType === "curly") {
+    let offsetIndex = 0;
+    for (let i = -hairVolume / 2; i < hairVolume / 2; i += curlSpacing) {
+      let hairX = xCenter + i;
+      let hairY = yCenter + abs(i / 4) - 10;
+
+      for (let j = 0; j < hairLength; j += 12) {
+        let stableOffset = afroOffsets[offsetIndex % afroOffsets.length] || 0;
+        ellipse(hairX + stableOffset, hairY + j, 12, 12);                 // Small curls
+        offsetIndex++;
+      }
+    }
+  }
+
+  // AFRO HAIR
+  else if (face.hair.hairType === "afro") {
+    let afroSize = hairVolume * 1.5;
+    let offsetIndex = 0;
+    for (let i = -afroSize / 2; i < afroSize / 2; i += afroSpacing) {
+      for (let j = -afroSize / 2; j < afroSize / 2; j += afroSpacing) {
+        let distance = dist(i, j, 0, 0);
+        if (distance < afroSize / 2) { // Keep it circular
+          let stableOffset = afroOffsets[offsetIndex % afroOffsets.length] || 0;
+          ellipse(xCenter + i + stableOffset, yCenter + j, 16, 16);
+          offsetIndex++;
+        }
+      }
+    }
+  }
+
+  // SPIKY HAIR
+  else if (face.hair.hairType === "spiky") {
+    let spikeIndex = 0;
+    for (let i = -hairVolume / 2; i < hairVolume / 2; i += spikeSpacing) {
+      let hairX = xCenter + i;
+      let hairY = yCenter - abs(i / 3) - 5;
+      let spikeHeight = spikeHeights[spikeIndex % spikeHeights.length] || 30;
+
+      triangle(
+        hairX, hairY, 
+        hairX - 6, hairY - spikeHeight, 
+        hairX + 6, hairY - spikeHeight
+      ); // Sharp spikes
+      spikeIndex++;
+    }
+  }
+
+  // BALD - No hair drawn
+}
+
+// ------------------- INTERACTIVITY --------------------------------
+// MAKEUP
+function drawMakeup() {
+  if (!face.makeup.enabled) return;                               // Don't draw makeup if the toggle is OFF
+
+  let xCenter = width / 2;
+
+  // LIPS POSITION
+  let lipY = height / 2 + face.lips.yOffset;                     // Lips are near the bottom of the face
+  let lipWidth = face.lips.size;
+  let lipHeight = face.lips.size / 2;
+  let curveIntensity = face.lips.curveIntensity * lipHeight / 2; // Curve depth
+
+  // EYES POSITION
+  let eyeY = height / 3 + face.lips.yOffset + 32;                 // Adjusted for eye level
+  let eyeWidth = face.eyes.eyeSize;
+  let eyeHeight = face.eyes.eyeSize * face.eyes.openness;
+  let eyeCurve = eyeHeight / 4;                                   // Controls the depth of the eyeshadow curve
+
+  // BLUSH POSITION
+  let blushY = height / 2 + 10;                                   // Higher on the cheeks, not too low
+
+  // EYESHADOW (Aligned with the eyes)
+  fill(face.makeup.eyeshadowColor);
+  noStroke();
+  for (let i = -1; i <= 1; i += 2) {                              // Left (-1) & Right (1) eyes
+    let eyeX = xCenter + i * 30;
+
+    beginShape();
+    vertex(eyeX - eyeWidth / 2, eyeY);
+    bezierVertex(
+      eyeX - eyeWidth / 3, eyeY - eyeHeight / 3 - eyeCurve, 
+      eyeX + eyeWidth / 3, eyeY - eyeHeight / 3 - eyeCurve, 
+      eyeX + eyeWidth / 2, eyeY
+    );
+    bezierVertex(
+      eyeX + eyeWidth / 3, eyeY - eyeHeight / 4, 
+      eyeX - eyeWidth / 3, eyeY - eyeHeight / 4, 
+      eyeX - eyeWidth / 2, eyeY
+    );
+    endShape(CLOSE);
+  }
+
+  // BLUSH (Placed on cheeks)
+  fill(face.makeup.blushColor);
+  ellipse(xCenter - 40, blushY, 30, 20); // Left cheek
+  ellipse(xCenter + 40, blushY, 30, 20); // Right cheek
+
+  // LIPSTICK (Traces the lips)
+  fill(face.makeup.lipstickColor);
+  noStroke();
+
+  // Top Lip
+  beginShape();
+  vertex(xCenter - lipWidth / 2, lipY);
+  bezierVertex(
+    xCenter - lipWidth / 4, lipY - lipHeight / 4 - curveIntensity, 
+    xCenter - lipWidth / 8, lipY - lipHeight / 2, 
+    xCenter, lipY - lipHeight / 4 - curveIntensity
+  );
+  bezierVertex(
+    xCenter + lipWidth / 8, lipY - lipHeight / 2, 
+    xCenter + lipWidth / 4, lipY - lipHeight / 4 - curveIntensity, 
+    xCenter + lipWidth / 2, lipY
+  );
+  endShape();
+
+  // Bottom Lip
+  beginShape();
+  vertex(xCenter - lipWidth / 2, lipY);
+  bezierVertex(
+    xCenter - lipWidth / 3, lipY + lipHeight / 2 + curveIntensity, 
+    xCenter + lipWidth / 3, lipY + lipHeight / 2 + curveIntensity, 
+    xCenter + lipWidth / 2, lipY
+  );
+  endShape(CLOSE);
+}
+
+
+
 // ------------------- RANDOMIZING --------------------------------
 
 // RANDOMIZE LIPS
@@ -345,20 +560,53 @@ function randomizeSkin() {
   face.skin.skinColor = [random(255), random(255), random(255)];
 }
 
+// RANDOMIZE HAIR
+function randomizeHair() {
+  let hairTypes = ["straight", "curly", "wavy", "spiky", "afro", "bald"];
+  face.hair.hairType = random(hairTypes);
+  face.hair.hairColor = [random(50, 200), random(30, 150), random(20, 100)];
+  face.hair.hairLength = random(50, 200);
+  face.hair.hairVolume = random(50, 120);
+  face.hair.hairParting = random(["left", "right", "center"]);
+  face.hair.hairDensity = random(0.5, 2); // 0.5 = sparse, 2 = very dense
+
+  console.log("Hair type: " + face.hair.hairType);
+}
+
+function randomizeMakeup(feature) {
+  if (feature === "eyes") {
+    face.makeup.eyeshadowColor = [random(50, 255), random(50, 200), random(50, 200)]; // Soft pastels
+  } 
+  else if (feature === "lips") {
+    face.makeup.lipstickColor = [random(150, 255), random(50, 100), random(50, 100)]; // Rich lip colors
+  } 
+  else if (feature === "skin") {
+    face.makeup.blushColor = [random(200, 100, 150), random(50, 100), random(50, 100)]; // Warm blush tones
+  }
+}
+
+
 // Randomize the given face feature
 function randomizeFeature(feature) {
   if (feature === 'lips') {
     randomizeLips();
+    randomizeMakeup('lips');                          // Makeup (lipstick) updates with lips
   } else if (feature === 'eyes') {
     randomizeEyes();
-  } else if(feature === "eyebrows") {
-    randomizeEyebrows();        
+    randomizeMakeup('eyes');                          // Makeup (eyeshadow) updates with eyes
+  } else if (feature === 'skin') {
+    randomizeSkin();
+    randomizeMakeup('skin');                          // Makeup (blush) updates with skin
+  } else if (feature === 'faceShape') {
+    randomizeFaceShape();
+  } else if (feature === 'hair') {
+    randomizeHair();
+  } else if (feature === 'eyebrows') {
+    randomizeEyebrows();
   } else if (feature === 'nose') {
     randomizeNose();
-  } else if (feature === "faceShape") {
-    randomizeFaceShape();
-  } else if (feature === "skin") {
-    randomizeSkin();
   }
+
   console.log(`Randomized ${feature}`);
+  redraw();
 }
