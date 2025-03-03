@@ -31,7 +31,14 @@ let face = {
     eyebrowCurve: 5, // Curve/Angle of the eyebrows
     thickness: 2 // Thickness of eyebrows
   },
-  ears: {},
+  ears: {
+    earWidth: 10, // width of ears - how wide they come out from the face
+    earHeight: 20, // height of ears - how tall they are
+    earHeightOffset: 8, //where the ears sit on the face, higher or lower
+    earSize: 20 //size of curve
+
+
+  },
   hair: {
     hairType: "straight", // Default type
     hairColor: [50, 30, 20], // Default hair color (brown)
@@ -97,6 +104,10 @@ function setup() {
     redraw(); // Redraw the face
   });
 
+  let earButton = createButton("Ears");
+  earButton.position(450, 230);
+  earButton.mousePressed(() => randomizeFeature("ear"));
+
 }
 
 // ------------------- DRAWING ------------------------------------
@@ -117,6 +128,8 @@ function drawFace() {
   drawNose();
   drawEyes();
   drawEyebrows();
+  drawEars();
+  
   // Call the other features here
 }
 
@@ -427,6 +440,42 @@ function drawHair() {
   // BALD - No hair drawn
 }
 
+function drawEars(){
+
+  let xCenter = width/2;
+  let yCenter = height/2;
+
+  
+  for (let i = -1; i <= 1; i += 2) { // Left (-1) and right (1) eye
+    let earX = xCenter + i * face.faceShape.faceWidth / 1.75;
+    let earY = yCenter + face.ears.earHeightOffset;
+
+    let topEarY = earY;
+    let bottomEarY = earY - face.ears.earHeight;
+
+    let earCurve = earY - face.ears.earSize;
+    let earWidth = earX + i * face.ears.earWidth;
+
+    beginShape();
+    fill(face.skin.skinColor);
+
+    vertex(earX, topEarY);
+    bezierVertex(earWidth, earY, earWidth, earCurve, earX, bottomEarY);
+
+    // vertex(earX, bottomEarY + (10))
+    // bezierVertex(earWidth,  bottomEarY + 10, earWidth, topEarY - 10, earX, topEarY - 10);
+    // //point(earX, bottomEarY + 10);
+    // //point(earX, topEarY- 10)
+
+    endShape();
+
+    //ellipse(eyeX, eyeY, 50, 50);
+  }
+
+  
+}
+
+
 // ------------------- INTERACTIVITY --------------------------------
 // MAKEUP
 function drawMakeup() {
@@ -586,6 +635,16 @@ function randomizeMakeup(feature) {
 }
 
 
+function randomizeEars(){
+ 
+
+  face.ears.earHeight = random(10, 40);
+  face.ears.earWidth = random(5, 45);
+  face.ears.earHeightOffset = random(-15, 5);
+  face.ears.earSize = random(10, 30);
+
+}
+
 // Randomize the given face feature
 function randomizeFeature(feature) {
   if (feature === 'lips') {
@@ -605,6 +664,8 @@ function randomizeFeature(feature) {
     randomizeEyebrows();
   } else if (feature === 'nose') {
     randomizeNose();
+  } else if (feature === "ear") {
+    randomizeEars();
   }
 
   console.log(`Randomized ${feature}`);
